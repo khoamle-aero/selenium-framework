@@ -50,8 +50,13 @@ public class BaseTest {
             if (isHeadless) {
                 options.addArguments("-headless");
                 options.addArguments("--window-size=1920,1080");
+
+                // CRUCIAL FOR CI: Bypasses cloud network loopback restrictions
+                options.addPreference("network.dns.disableIPv6", true);
+                options.addPreference("network.proxy.type", 0); // Force direct network routing
             }
             driver = new FirefoxDriver(options);
+
         } else {
             throw new IllegalArgumentException("Unsupported browser layout environment: " + browser);
         }
