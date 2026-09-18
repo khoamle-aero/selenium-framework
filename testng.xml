@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org">
+<!-- 'parallel="tests"' launches separate <test> tags in isolated threads concurrently -->
+<suite name="Selenium E2E Automation Suite" parallel="tests" thread-count="2" verbose="1">
+
+    <!-- Thread 1: Executes login workflows on a Google Chrome instance -->
+    <test name="Authentication Tests - Chrome Execution Profile">
+        <parameter name="browser" value="chrome"/>
+        <classes>
+            <class name="com.automation.tests.LoginTest"/>
+        </classes>
+    </test>
+
+    <!-- Thread 2: Executes identical workflows on a Mozilla Firefox instance in parallel -->
+    <test name="Authentication Tests - Firefox Execution Profile">
+        <parameter name="browser" value="firefox"/>
+        <classes>
+            <class name="com.automation.tests.LoginTest"/>
+        </classes>
+    </test>
+
+</suite>
