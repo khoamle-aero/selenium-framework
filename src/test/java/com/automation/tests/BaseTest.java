@@ -1,6 +1,6 @@
 package com.automation.tests;
 
-import io.github.bonigarcia.wdm.WebDriverManager; // <-- Add this new import line
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -31,24 +31,25 @@ public class BaseTest {
         boolean isHeadless = Boolean.parseBoolean(System.getProperty("headless", "false"));
 
         if (browser.equalsIgnoreCase("chrome")) {
-            // Automatically sets up matching chromedriver files cleanly inside cloud instances
             WebDriverManager.chromedriver().setup();
-
             ChromeOptions options = new ChromeOptions();
+
             if (isHeadless) {
                 options.addArguments("--headless=new");
                 options.addArguments("--disable-gpu");
                 options.addArguments("--no-sandbox");
                 options.addArguments("--disable-dev-shm-usage");
+                options.addArguments("--window-size=1920,1080"); // Force standard resolution paint
+                options.addArguments("--remote-allow-origins=*"); // Prevents socket block exceptions
             }
             driver = new ChromeDriver(options);
         } else if (browser.equalsIgnoreCase("firefox")) {
-            // Automatically sets up matching geckodriver files cleanly inside cloud instances
             WebDriverManager.firefoxdriver().setup();
-
             FirefoxOptions options = new FirefoxOptions();
+
             if (isHeadless) {
                 options.addArguments("-headless");
+                options.addArguments("--window-size=1920,1080");
             }
             driver = new FirefoxDriver(options);
         } else {
@@ -72,10 +73,17 @@ public class BaseTest {
     }
 
     private void captureScreenshot(String testName) {
+        // Creates directory if missing before saving screen captures
+        File screenshotFolder = new File(System.getProperty("user.dir") + "/screenshots");
+        if (!screenshotFolder.exists()) {
+            screenshotFolder.mkdirs();
+        }
+
         File srcFile = ((TakesScreenshot) getDriver()).getScreenshotAs(OutputType.FILE);
-        String screenshotPath = System.getProperty("user.dir") + "/screenshots/" + testName + "_" + System.currentTimeMillis() + ".png";
+        String screenshotPath = screenshotFolder.getAbsolutePath() + "/" + testName + "_" + System.currentTimeMillis() + ".png";
         try {
             FileHandler.copy(srcFile, new File(screenshotPath));
+            System.out.println("[INFO] Intercepted test failure. Screenshot archived to: " + screenshotPath);
         } catch (IOException e) {
             System.err.println("[ERROR] Unable to save execution screenshot track: " + e.getMessage());
         }
