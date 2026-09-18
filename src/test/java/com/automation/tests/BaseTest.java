@@ -4,7 +4,9 @@ import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.io.FileHandler;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
@@ -16,11 +18,11 @@ import java.io.IOException;
 import java.time.Duration;
 
 public class BaseTest {
-    // ThreadLocal ensures thread-safety when running tests in parallel
+    // ThreadLocal guarantees isolated memory pools when running browsers in parallel threads
     private static final ThreadLocal<WebDriver> driverThread = new ThreadLocal<>();
 
     /**
-     * Retrieves the driver instance unique to the executing thread.
+     * Retrieves the isolated driver instance tied to the active executing test thread.
      */
     public WebDriver getDriver() {
         return driverThread.get();
@@ -31,13 +33,26 @@ public class BaseTest {
     public void setUp(String browser) {
         WebDriver driver;
 
-        // Dynamic browser initialization based on testng.xml execution configuration
+        // Dynamically flags headless mode if triggered via CLI / GitHub Actions flags (-Dheadless=true)
+        boolean isHeadless = Boolean.parseBoolean(System.getProperty("headless", "false"));
+
         if (browser.equalsIgnoreCase("chrome")) {
-            driver = new ChromeDriver();
+            ChromeOptions options = new ChromeOptions();
+            if (isHeadless) {
+                options.addArguments("--headless=new");
+                options.addArguments("--disable-gpu");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+            }
+            driver = new ChromeDriver(options);
         } else if (browser.equalsIgnoreCase("firefox")) {
-            driver = new FirefoxDriver();
+            FirefoxOptions options = new FirefoxOptions();
+            if (isHeadless) {
+                options.addArguments("-headless");
+            }
+            driver = new FirefoxDriver(options);
         } else {
-            throw new IllegalArgumentException("Unsupported browser layout environment profile: " + browser);
+            throw new IllegalArgumentException("Unsupported browser layout profile environment environment: " + browser);
         }
 
         driverThread.set(driver);
@@ -49,20 +64,20 @@ public class BaseTest {
 
     @AfterMethod
     public void tearDown(ITestResult result) {
-        // Automatically intercept failures to record screen evidence
+        // Intercept validation failures instantly to preserve UI evidence
         if (result.getStatus() == ITestResult.FAILURE) {
             captureScreenshot(result.getName());
         }
 
-        // Clean closure routines
+        // Clean termination sequence
         if (getDriver() != null) {
             getDriver().quit();
         }
-        driverThread.remove(); // Clean thread workspace to avoid memory bloating
+        driverThread.remove(); // Purges thread memory workspace completely
     }
 
     /**
-     * Utility method to capture the exact browser viewport state during runtime errors.
+     * Captures and archives a localized viewport screenshot file during execution failures.
      */
     private void captureScreenshot(String testName) {
         File srcFile = ((TakesScreenshot) getDriver()).getScreenshotAs(OutputType.FILE);

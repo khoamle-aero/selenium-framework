@@ -1,0 +1,35 @@
+name: Selenium Automation CI Suite
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Execute Automated Browser Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out your framework repository code
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      # 2. Initialize Java 21 environment profile
+      - name: Set Up Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # 3. Ensure target browsers are physically available on the virtual runner
+      - name: Setup Chrome and Firefox Browsers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable firefox
+
+      # 4. Trigger the TestNG execution matrix headlessly via Maven
+      - name: Run Multi-Threaded Parallel Execution Suite
+        run: mvn clean test -Dheadless=true
